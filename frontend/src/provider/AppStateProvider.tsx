@@ -1,3 +1,4 @@
+import { WindowSize, useWindowStateChangeListener } from "@dannadori/demo-base";
 import React, { useContext, useEffect, useState, ReactNode } from "react";
 import { loadURLAsDataURL } from "../utils/urlReader";
 
@@ -10,6 +11,8 @@ type AppStateValue = {
     setInputSourceType: (source: string | null) => void;
     inputSource: string | MediaStream | null;
     setInputSource: (source: MediaStream | string | null) => void;
+
+    windowSize: WindowSize;
 };
 
 const AppStateContext = React.createContext<AppStateValue | null>(null);
@@ -29,14 +32,11 @@ export const AppStateProvider = ({ children }: Props) => {
     const [inputSource, _setInputSource] = useState<MediaStream | string | null>(null);
 
     const [_updateTime, setUpdateTime] = useState<number>(0);
+    const { windowSize } = useWindowStateChangeListener();
 
     // (1) 初期化
     //// (1-1) Input初期化
     useEffect(() => {
-        navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: true,
-        });
         const loadInitialInputSource = async (path: string) => {
             const data = await loadURLAsDataURL(path);
             setInputSource(data);
@@ -53,6 +53,7 @@ export const AppStateProvider = ({ children }: Props) => {
                 x.stop();
             });
         }
+        console.log("input source", source);
         _setInputSource(source);
     };
 
@@ -67,6 +68,8 @@ export const AppStateProvider = ({ children }: Props) => {
         inputSource,
         setInputSource,
         updateDetector,
+
+        windowSize,
     };
 
     return <AppStateContext.Provider value={providerValue}>{children}</AppStateContext.Provider>;
