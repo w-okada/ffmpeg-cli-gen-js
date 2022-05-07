@@ -11,10 +11,8 @@ app.get('/', (req, res) => {
 });
 app.use('/frontend', express_1.default.static('frontend/dist/', {
     setHeaders: function (res, path) {
-        res.set("Access-Control-Allow-Origin", "*");
-        res.set("Access-Control-Allow-Headers", "Content-Type,X-Requested-With");
-        res.set("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
-        res.set("X-Powered-By", ' 3.2.1');
+        res.set("Cross-Origin-Opener-Policy", "same-origin");
+        res.set("Cross-Origin-Embedder-Policy", "require-corp");
     }
 }));
 app.listen(port, () => {
