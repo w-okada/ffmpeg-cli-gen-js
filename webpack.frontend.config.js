@@ -5,9 +5,9 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 module.exports = {
     mode: "development",
     // mode: "production",
-    entry: path.resolve(__dirname, "src/index.tsx"),
+    entry: path.resolve(__dirname, "frontend/src/index.tsx"),
     output: {
-        path: path.resolve(__dirname, "dist"),
+        path: path.resolve(__dirname, "frontend/dist"),
         filename: "index.js",
     },
     resolve: {
@@ -20,10 +20,10 @@ module.exports = {
                 test: [/\.ts$/, /\.tsx$/],
                 use: [
                     {
-                        loader: "babel-loader",
+                        loader: "ts-loader",
                         options: {
-                            presets: ["@babel/preset-env", "@babel/preset-react", "@babel/preset-typescript"],
-                            plugins: ["@babel/plugin-transform-runtime"],
+                            // transpileOnly: true,
+                            configFile: "tsconfig.frontend.json",
                         },
                     },
                 ],
@@ -40,13 +40,13 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, "public/index.html"),
+            template: path.resolve(__dirname, "frontend/public/index.html"),
             filename: "./index.html",
         }),
     ],
     devServer: {
         static: {
-            directory: path.join(__dirname, "dist"),
+            directory: path.join(__dirname, "frontend/dist"),
         },
     },
 };
