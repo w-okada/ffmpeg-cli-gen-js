@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { Controller } from "./Controller";
 import { useAppState } from "./provider/AppStateProvider";
+import { FFmpeg, createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 
 type CroppingAreaState = {
     isSelecting: boolean;
@@ -35,6 +36,8 @@ const App = () => {
     const [removeAudio, _setRemoveAudio] = useState(true);
     const [croppingAreaState, setCroppingAreaState] = useState<CroppingAreaState>(initialCroppingAreaState);
     const [copyStream, _setCopyStream] = useState(false);
+
+    const [ffmpeg, setFfmpeg] = useState<FFmpeg>();
 
     useEffect(() => {
         const video = document.getElementById("input") as HTMLVideoElement;
@@ -185,6 +188,62 @@ const App = () => {
         cli.innerHTML = `ffmpeg -ss ${startTime} -i a.mp4 ${crop} -t ${(endTime - startTime).toFixed(2)} ${copyStreamText} ${removeAudio ? "-an" : ""} out.mp4`;
     }, [videoDuration, startTime, endTime, removeAudio, copyStream, croppingAreaState]);
 
+    // (5) FFMPEG WASM
+    //// (5-1)
+    useEffect(() => {
+        const ffmpeg = createFFmpeg({
+            log: true,
+            corePath: "./ffmpeg/ffmpeg-core.js",
+        });
+        const loadFfmpeg = async () => {
+            await ffmpeg!.load();
+            ffmpeg!.setProgress(({ ratio }) => {
+                console.log("progress:", ratio);
+            });
+            setFfmpeg(ffmpeg);
+        };
+        loadFfmpeg();
+    }, []);
+
+    const convert = async () => {
+        if (!ffmpeg) {
+            console.log("ffmpeg is null", ffmpeg);
+            return;
+        }
+        // upload to wasm space
+        const video = document.getElementById("input") as HTMLVideoElement;
+        const src = video.src;
+        const orgName = "org.mp4";
+        ffmpeg.FS("writeFile", orgName, await fetchFile(src));
+
+        // run and download from wasm space
+        const outName = "out.mp4";
+        // generate cli
+        let crop = "";
+        if (croppingAreaState.realEndX > 0) {
+            const width = (croppingAreaState.realEndX - croppingAreaState.realStartX).toFixed(0);
+            const height = (croppingAreaState.realEndY - croppingAreaState.realStartY).toFixed(0);
+            const offsetX = croppingAreaState.realStartX.toFixed(0);
+            const offsetY = croppingAreaState.realStartY.toFixed(0);
+            crop = `-vf crop=${width}:${height}:${offsetX}:${offsetY}`;
+        }
+
+        let copyStreamText = copyStream ? "-c copy" : "";
+
+        const cli = `-ss ${startTime} -i ${orgName} ${crop} -t ${(endTime - startTime).toFixed(2)} ${copyStreamText} ${removeAudio ? "-an" : ""} ${outName}`;
+
+        const cliArgs = cli.split(" ");
+
+        await ffmpeg.run(...cliArgs);
+        const data = ffmpeg.FS("readFile", outName);
+
+        // download to local pc
+        const a = document.createElement("a");
+        a.download = outName;
+        a.href = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
+        a.click();
+    };
+
     return (
         <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
             <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "70%" }}>
@@ -242,6 +301,11 @@ const App = () => {
 
                     <div id="cli-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
                         <div id="cli"></div>
+                        <div>
+                            <button className="btn btn-xs" onClick={convert}>
+                                convert
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

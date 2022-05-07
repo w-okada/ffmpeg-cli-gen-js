@@ -8,8 +8,9 @@
         "tsc:backend": "tsc -p tsconfig.backend.json",
         "build:backend": "run-s clean:backend tsc:backend",
         "clean:frontend": "rimraf frontend/dist/*",
+        "copyresources:frontend": "mkdir -p frontend/dist && cp -r frontend/resources/ffmpeg frontend/dist",
         "webpack:frontend": "webpack --config webpack.frontend.config.js",
-        "build:frontend": "run-s clean:frontend webpack:frontend",
+        "build:frontend": "run-s clean:frontend copyresources:frontend webpack:frontend",
         "watch:frontend": "webpack --watch --config webpack.frontend.config.js",
         "deploy": "git push heroku master",
         "start": "node backend/dist/index.js",
@@ -42,8 +43,10 @@
         "webpack-cli": "^4.9.2"
     },
     "dependencies": {
-        "express": "^4.18.1",
         "@dannadori/demo-base": "^1.0.8",
+        "@ffmpeg/core": "^0.10.0",
+        "@ffmpeg/ffmpeg": "^0.10.1",
+        "express": "^4.18.1",
         "react": "^18.1.0",
         "react-dom": "^18.1.0"
     }
