@@ -10,6 +10,7 @@ export const Controller = () => {
         currentValue: inputSourceType || "File",
         onInputSourceTypeChanged: setInputSourceType,
         onInputSourceChanged: setInputSource,
+        onlyFile: true,
     };
 
     return (
