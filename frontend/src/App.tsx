@@ -38,6 +38,9 @@ const App = () => {
     const [copyStream, _setCopyStream] = useState(false);
 
     const [ffmpeg, setFfmpeg] = useState<FFmpeg>();
+    const [progress, setProgress] = useState(0);
+    const [isConverting, setIsConverting] = useState(false);
+    // const [_updateTime, setUpdateTime] = useState(0);
 
     useEffect(() => {
         const video = document.getElementById("input") as HTMLVideoElement;
@@ -47,7 +50,6 @@ const App = () => {
                 fitLayout();
             };
             video.src = inputSource;
-            console.log("length", video.duration);
         }
     }, [inputSource]);
 
@@ -62,7 +64,6 @@ const App = () => {
         const videoCS = getComputedStyle(video);
         const videoWidth = parseInt(videoCS.getPropertyValue("width"));
         const videoHeight = parseInt(videoCS.getPropertyValue("height"));
-        console.log("video", videoWidth, videoHeight);
 
         const overlayCanvas = document.getElementById("overlay") as HTMLCanvasElement;
         overlayCanvas.width = videoWidth;
@@ -90,7 +91,6 @@ const App = () => {
     //// (2-1) slider bar
     ////// (2-1-1) slider bar time
     const changeCurrentTime = (ev: React.ChangeEvent<HTMLInputElement>) => {
-        console.log(ev.target.value);
         const video = document.getElementById("input") as HTMLVideoElement;
         video.currentTime = Number(ev.target.value);
         setCurrentTime(Number(ev.target.value));
@@ -199,6 +199,7 @@ const App = () => {
             await ffmpeg!.load();
             ffmpeg!.setProgress(({ ratio }) => {
                 console.log("progress:", ratio);
+                setProgress(ratio);
             });
             setFfmpeg(ffmpeg);
         };
@@ -210,6 +211,13 @@ const App = () => {
             console.log("ffmpeg is null", ffmpeg);
             return;
         }
+
+        if (isConverting) {
+            console.log("already converting");
+            return;
+        }
+        setIsConverting(true);
+
         // upload to wasm space
         const video = document.getElementById("input") as HTMLVideoElement;
         const src = video.src;
@@ -242,7 +250,30 @@ const App = () => {
         a.download = outName;
         a.href = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
         a.click();
+        setIsConverting(false);
     };
+
+    const progressBar = useMemo(() => {
+        const level = Math.ceil(progress * 100);
+        const style = { "--value": level } as React.CSSProperties;
+        return (
+            <div className="radial-progress" style={style}>
+                {level}%
+            </div>
+        );
+    }, [progress]);
+
+    const convertButton = (() => {
+        if (isConverting) {
+            return <div>converting...</div>;
+        } else {
+            return (
+                <button className="btn btn-sm btn-outline btn-accent" onClick={convert}>
+                    convert
+                </button>
+            );
+        }
+    })();
 
     return (
         <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
@@ -273,13 +304,13 @@ const App = () => {
                         </div>
                         <div style={{ marginLeft: "5px" }}></div>
                         <div>
-                            <button className="btn btn-xs" onClick={setStartTime}>
+                            <button className="btn btn-sm" onClick={setStartTime}>
                                 set start
                             </button>
                         </div>
                         <div style={{ marginLeft: "5px" }}></div>
                         <div>
-                            <button className="btn btn-xs" onClick={setEndTime}>
+                            <button className="btn btn-sm" onClick={setEndTime}>
                                 set end
                             </button>
                         </div>
@@ -299,13 +330,14 @@ const App = () => {
                         </div>
                     </div>
 
+                    <div id="button-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                        <div>{convertButton}</div>
+                        <div style={{ marginLeft: "5px" }}></div>
+
+                        <div>{progressBar}</div>
+                    </div>
                     <div id="cli-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
                         <div id="cli"></div>
-                        <div>
-                            <button className="btn btn-xs" onClick={convert}>
-                                convert
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

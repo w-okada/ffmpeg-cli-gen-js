@@ -25,7 +25,7 @@ export const useAppState = (): AppStateValue => {
     return state;
 };
 
-const initialInputSourcePath = "mov/Model.mp4";
+const initialInputSourcePath = "";
 
 export const AppStateProvider = ({ children }: Props) => {
     const [inputSourceType, setInputSourceType] = useState<string | null>(null);
