@@ -276,7 +276,7 @@ const App = () => {
     })();
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+        <div className="container" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
             <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "70%" }}>
                 <div id="video-container" style={{ width: "70%", height: "100%", position: "relative" }}>
                     <video id="input" style={{ position: "absolute", objectFit: "contain", maxHeight: "100%" }}></video>
@@ -305,7 +305,7 @@ const App = () => {
                         <div style={{ marginLeft: "5px" }}></div>
                         <div>
                             <button className="btn btn-sm" onClick={setStartTime}>
-                                set start
+                                set startdddda2sdfsdfsaf22
                             </button>
                         </div>
                         <div style={{ marginLeft: "5px" }}></div>
