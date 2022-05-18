@@ -48,5 +48,9 @@ module.exports = {
         static: {
             directory: path.join(__dirname, "frontend/dist"),
         },
+        headers: {
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+        },
     },
 };

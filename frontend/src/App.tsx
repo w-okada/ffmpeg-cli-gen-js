@@ -3,6 +3,7 @@ import "./App.css";
 import { Controller } from "./Controller";
 import { useAppState } from "./provider/AppStateProvider";
 import { FFmpeg, createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
+import { VideoInputSelector, VideoInputSelectorProps } from "@dannadori/demo-base";
 
 type CroppingAreaState = {
     isSelecting: boolean;
@@ -160,13 +161,15 @@ const App = () => {
         };
 
         // (a) update area
-        const ctx = overlay.getContext("2d")!;
-        ctx.clearRect(0, 0, overlay.width, overlay.height);
-        ctx.fillStyle = "#88888888";
-        ctx.fillRect(0, 0, overlay.width, overlay.height);
-
-        if (croppingAreaState.screenEndX > 0) {
-            ctx.clearRect(croppingAreaState.screenStartX, croppingAreaState.screenStartY, croppingAreaState.screenEndX - croppingAreaState.screenStartX, croppingAreaState.screenEndY - croppingAreaState.screenStartY!);
+        const input = document.getElementById("input") as HTMLVideoElement;
+        if (input.src) {
+            const ctx = overlay.getContext("2d")!;
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+            ctx.fillStyle = "#88888888";
+            ctx.fillRect(0, 0, overlay.width, overlay.height);
+            if (croppingAreaState.screenEndX > 0) {
+                ctx.clearRect(croppingAreaState.screenStartX, croppingAreaState.screenStartY, croppingAreaState.screenEndX - croppingAreaState.screenStartX, croppingAreaState.screenEndY - croppingAreaState.screenStartY!);
+            }
         }
     }, [croppingAreaState]);
 
@@ -275,18 +278,21 @@ const App = () => {
         }
     })();
 
+    const { inputSourceType, setInputSourceType, setInputSource } = useAppState();
+    const videoInputSelectorProps: VideoInputSelectorProps = {
+        id: "video-input-selector",
+        currentValue: inputSourceType || "File",
+        onInputSourceTypeChanged: setInputSourceType,
+        onInputSourceChanged: setInputSource,
+        onlyFile: true,
+    };
+
     return (
-        <div className="container" style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+        <>
             <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "70%" }}>
                 <div id="video-container" style={{ width: "70%", height: "100%", position: "relative" }}>
                     <video id="input" style={{ position: "absolute", objectFit: "contain", maxHeight: "100%" }}></video>
-                    <canvas
-                        id="overlay"
-                        style={{ position: "absolute", objectFit: "contain" }}
-                        // onClick={(ev) => {
-                        //     overlayClicked(ev);
-                        // }}
-                    />
+                    <canvas id="overlay" style={{ position: "absolute", objectFit: "contain" }} />
                 </div>
                 <div id="side-panel" style={{ width: "30%" }}>
                     <Controller></Controller>
@@ -305,7 +311,7 @@ const App = () => {
                         <div style={{ marginLeft: "5px" }}></div>
                         <div>
                             <button className="btn btn-sm" onClick={setStartTime}>
-                                set startdddda2sdfsdfsaf22
+                                set start
                             </button>
                         </div>
                         <div style={{ marginLeft: "5px" }}></div>
@@ -331,6 +337,8 @@ const App = () => {
                     </div>
 
                     <div id="button-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                        <VideoInputSelector {...videoInputSelectorProps}></VideoInputSelector>
+
                         <div>{convertButton}</div>
                         <div style={{ marginLeft: "5px" }}></div>
 
@@ -341,7 +349,7 @@ const App = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

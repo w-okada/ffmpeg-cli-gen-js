@@ -1,23 +1,21 @@
 import React from "react";
-import { Credit, VideoInputSelector, VideoInputSelectorProps } from "@dannadori/demo-base";
-import { useAppState } from "./provider/AppStateProvider";
+import { Credit, CreditProps } from "@dannadori/demo-base";
+import { Card } from "./components/Card";
 
 export const Controller = () => {
-    const { inputSourceType, setInputSourceType, setInputSource } = useAppState();
-
-    const videoInputSelectorProps: VideoInputSelectorProps = {
-        id: "video-input-selector",
-        currentValue: inputSourceType || "File",
-        onInputSourceTypeChanged: setInputSourceType,
-        onInputSourceChanged: setInputSource,
-        onlyFile: true,
+    const creditProps: CreditProps = {
+        title: "Created by w-okada.",
+        homepage: "https://github.com/w-okada/screen-recorder-ts",
+        github: "https://github.com/w-okada/screen-recorder-ts",
+        twitter: "https://twitter.com/DannadoriYellow",
+        linkedin: "https://www.linkedin.com/in/068a68187/",
+        blog: "https://medium.com/@dannadori",
     };
 
     return (
         <div style={{ display: "flex", flexDirection: "column" }}>
-            <Credit></Credit>
-
-            <VideoInputSelector {...videoInputSelectorProps}></VideoInputSelector>
+            <Credit {...creditProps}></Credit>
+            <Card></Card>
         </div>
     );
 };
