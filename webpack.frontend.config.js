@@ -3,8 +3,8 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-    mode: "development",
-    // mode: "production",
+    // mode: "development",
+    mode: "production",
     entry: path.resolve(__dirname, "frontend/src/index.tsx"),
     output: {
         path: path.resolve(__dirname, "frontend/dist"),
@@ -51,6 +51,12 @@ module.exports = {
         headers: {
             "Cross-Origin-Opener-Policy": "same-origin",
             "Cross-Origin-Embedder-Policy": "require-corp",
+        },
+        client: {
+            overlay: {
+                errors: false,
+                warnings: false,
+            },
         },
     },
 };
