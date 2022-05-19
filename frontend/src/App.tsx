@@ -289,64 +289,64 @@ const App = () => {
 
     return (
         <>
-            <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "70%" }}>
-                <div id="video-container" style={{ width: "70%", height: "100%", position: "relative" }}>
-                    <video id="input" style={{ position: "absolute", objectFit: "contain", maxHeight: "100%" }}></video>
-                    <canvas id="overlay" style={{ position: "absolute", objectFit: "contain" }} />
+            <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "100%" }}>
+                <div className="mt-5 ml-5" style={{ display: "flex", flexDirection: "column", width: "70%", height: "100%" }}>
+                    <VideoInputSelector {...videoInputSelectorProps}></VideoInputSelector>
+                    <div id="video-container" style={{ width: "100%", height: "100%", position: "relative" }}>
+                        <video id="input" style={{ position: "absolute", objectFit: "contain", maxHeight: "100%" }}></video>
+                        <canvas id="overlay" style={{ position: "absolute", objectFit: "contain" }} />
+                    </div>
+
+                    <div id="under-panel" style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                        <div id="time-slider-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                            <div>Time</div>
+                            <div style={{ marginLeft: "5px" }}></div>
+                            <div style={{ width: "70%", height: "100%" }}>{timeSlider}</div>
+                            <div style={{ marginLeft: "5px" }}></div>
+                            <div>
+                                {currentTime}/{videoDuration}
+                            </div>
+                            <div style={{ marginLeft: "5px" }}></div>
+                            <div>
+                                <button className="btn btn-sm" onClick={setStartTime}>
+                                    set start
+                                </button>
+                            </div>
+                            <div style={{ marginLeft: "5px" }}></div>
+                            <div>
+                                <button className="btn btn-sm" onClick={setEndTime}>
+                                    set end
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="option-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                            <div style={{ display: "flex", flexDirection: "row" }}>
+                                <input type="checkbox" checked={removeAudio} className="checkbox checkbox-sm" onChange={setRemoveAudio} />
+                                <div style={{ marginLeft: "5px" }}></div>
+                                <span>remove audio</span>
+                            </div>
+                            <div style={{ marginLeft: "15px" }}></div>
+                            <div style={{ display: "flex", flexDirection: "row" }}>
+                                <input type="checkbox" checked={copyStream} className="checkbox checkbox-sm" onChange={setCopyStream} />
+                                <div style={{ marginLeft: "5px" }}></div>
+                                <span>copy stream</span>
+                            </div>
+                        </div>
+
+                        <div id="button-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                            <div>{convertButton}</div>
+                            <div style={{ marginLeft: "5px" }}></div>
+
+                            <div>{progressBar}</div>
+                        </div>
+                        <div id="cli-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                            <div id="cli"></div>
+                        </div>
+                    </div>
                 </div>
                 <div id="side-panel" style={{ width: "30%" }}>
                     <Controller></Controller>
-                </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "30%" }}>
-                <div id="under-panel" style={{ display: "flex", flexDirection: "column", width: "70%", height: "100%" }}>
-                    <div id="time-slider-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-                        <div>Time</div>
-                        <div style={{ marginLeft: "5px" }}></div>
-                        <div style={{ width: "70%", height: "100%" }}>{timeSlider}</div>
-                        <div style={{ marginLeft: "5px" }}></div>
-                        <div>
-                            {currentTime}/{videoDuration}
-                        </div>
-                        <div style={{ marginLeft: "5px" }}></div>
-                        <div>
-                            <button className="btn btn-sm" onClick={setStartTime}>
-                                set start
-                            </button>
-                        </div>
-                        <div style={{ marginLeft: "5px" }}></div>
-                        <div>
-                            <button className="btn btn-sm" onClick={setEndTime}>
-                                set end
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="option-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-                        <div style={{ display: "flex", flexDirection: "row" }}>
-                            <input type="checkbox" checked={removeAudio} className="checkbox checkbox-sm" onChange={setRemoveAudio} />
-                            <div style={{ marginLeft: "5px" }}></div>
-                            <span>remove audio</span>
-                        </div>
-                        <div style={{ marginLeft: "15px" }}></div>
-                        <div style={{ display: "flex", flexDirection: "row" }}>
-                            <input type="checkbox" checked={copyStream} className="checkbox checkbox-sm" onChange={setCopyStream} />
-                            <div style={{ marginLeft: "5px" }}></div>
-                            <span>copy stream</span>
-                        </div>
-                    </div>
-
-                    <div id="button-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-                        <VideoInputSelector {...videoInputSelectorProps}></VideoInputSelector>
-
-                        <div>{convertButton}</div>
-                        <div style={{ marginLeft: "5px" }}></div>
-
-                        <div>{progressBar}</div>
-                    </div>
-                    <div id="cli-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-                        <div id="cli"></div>
-                    </div>
                 </div>
             </div>
         </>
