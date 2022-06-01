@@ -339,9 +339,9 @@ const App = () => {
                             <div style={{ marginLeft: "5px" }}></div>
 
                             <div>{progressBar}</div>
-                        </div>
-                        <div id="cli-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-                            <div id="cli"></div>
+                            <div id="cli-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+                                <div id="cli"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
