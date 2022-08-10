@@ -9,6 +9,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, "frontend/dist"),
         filename: "index.js",
+        assetModuleFilename: "assets/[name][ext][hash]",
     },
     resolve: {
         modules: [path.resolve(__dirname, "node_modules")],

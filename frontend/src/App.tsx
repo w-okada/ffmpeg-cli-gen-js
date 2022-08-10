@@ -3,7 +3,11 @@ import "./App.css";
 import { Controller } from "./Controller";
 import { useAppState } from "./provider/AppStateProvider";
 import { FFmpeg, createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
-import { VideoInputSelector, VideoInputSelectorProps } from "@dannadori/demo-base";
+import { VideoInputSelector, VideoInputSelectorProps, VideoInputSelectorValue } from "./components-base";
+
+const OriginalMediaFile = "org.mp4";
+const OutputMediaFile = "out.mp4";
+const BlackScreenFile = "black.png";
 
 type CroppingAreaState = {
     isSelecting: boolean;
@@ -28,15 +32,36 @@ const initialCroppingAreaState: CroppingAreaState = {
     realEndY: -1,
 };
 
+type FfmpegOptions = {
+    startTime: number;
+    endTime: number; // duration = endTime - startTime
+    removeAudio: boolean;
+    copyStream: boolean;
+    croppingAreaState: CroppingAreaState;
+    audioWithBlackScreen: boolean;
+};
+const initialFfmpegOptions: FfmpegOptions = {
+    startTime: 0,
+    endTime: 0,
+    removeAudio: false,
+    copyStream: false,
+    croppingAreaState: initialCroppingAreaState,
+    audioWithBlackScreen: false,
+};
+
 const App = () => {
-    const { inputSource, windowSize } = useAppState();
+    const { videoInputSelectorValue, setVideoInputSelectorValue, windowSize } = useAppState();
     const [videoDuration, setVideoDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
-    const [startTime, _setStartTime] = useState(0);
-    const [endTime, _setEndTime] = useState(0);
-    const [removeAudio, _setRemoveAudio] = useState(true);
-    const [croppingAreaState, setCroppingAreaState] = useState<CroppingAreaState>(initialCroppingAreaState);
-    const [copyStream, _setCopyStream] = useState(false);
+    // const [startTime, _setStartTime] = useState(0);
+    // const [endTime, _setEndTime] = useState(0);
+    // const [removeAudio, _setRemoveAudio] = useState(true);
+    // const [croppingAreaState, setCroppingAreaState] = useState<CroppingAreaState>(initialCroppingAreaState);
+    // const [copyStream, _setCopyStream] = useState(false);
+    // const [blackScreen, _setBlackScreen] = useState(false);
+
+    const [ffmpegOptions, setFfmpegOptions] = useState<FfmpegOptions>(initialFfmpegOptions);
+    const [generatedCli, setGeneratedCli] = useState<string>("");
 
     const [ffmpeg, setFfmpeg] = useState<FFmpeg>();
     const [progress, setProgress] = useState(0);
@@ -45,14 +70,19 @@ const App = () => {
 
     useEffect(() => {
         const video = document.getElementById("input") as HTMLVideoElement;
-        if (typeof inputSource === "string") {
+        if (videoInputSelectorValue?.videoInputType === "File") {
+            if (!videoInputSelectorValue.dataURL) {
+                return;
+            }
             video.onloadedmetadata = (_ev) => {
                 setVideoDuration(video.duration);
                 fitLayout();
             };
-            video.src = inputSource;
+            video.src = videoInputSelectorValue.dataURL;
+        } else {
+            console.warn("not implemented for video input type:", videoInputSelectorValue?.videoInputType);
         }
-    }, [inputSource]);
+    }, [videoInputSelectorValue]);
 
     // (1) Layout
     //// (1-1) Fitting
@@ -98,22 +128,26 @@ const App = () => {
     };
     ////// (2-1-2) set start time
     const setStartTime = () => {
-        _setStartTime(currentTime);
+        setFfmpegOptions({ ...ffmpegOptions, startTime: currentTime });
     };
     ////// (2-1-3) set end time
     const setEndTime = () => {
-        _setEndTime(currentTime);
+        setFfmpegOptions({ ...ffmpegOptions, endTime: currentTime });
     };
 
     //// (2-2) Options
     ////// (2-2-1) audio remove
     const setRemoveAudio = () => {
-        _setRemoveAudio(!removeAudio);
+        setFfmpegOptions({ ...ffmpegOptions, removeAudio: !ffmpegOptions.removeAudio });
     };
 
     ////// (2-2-2) copy stream
     const setCopyStream = () => {
-        _setCopyStream(!copyStream);
+        setFfmpegOptions({ ...ffmpegOptions, copyStream: !ffmpegOptions.copyStream });
+    };
+
+    const setBlackScreen = () => {
+        setFfmpegOptions({ ...ffmpegOptions, audioWithBlackScreen: !ffmpegOptions.audioWithBlackScreen });
     };
 
     // (3) UI Operation (cropping area)
@@ -123,41 +157,42 @@ const App = () => {
 
         // register event handler
         overlay.onmousedown = (e: MouseEvent) => {
-            if (croppingAreaState.isSelecting === false) {
+            if (ffmpegOptions.croppingAreaState.isSelecting === false) {
                 const newCroppingAreaState = { ...initialCroppingAreaState };
                 newCroppingAreaState.screenStartX = e.offsetX;
                 newCroppingAreaState.screenStartY = e.offsetY;
                 newCroppingAreaState.isSelecting = true;
-                setCroppingAreaState(newCroppingAreaState);
+                ffmpegOptions.croppingAreaState = { ...newCroppingAreaState };
+                setFfmpegOptions({ ...ffmpegOptions });
             }
         };
 
         overlay.onmousemove = (e: MouseEvent) => {
-            if (croppingAreaState.isSelecting) {
-                croppingAreaState.screenEndX = e.offsetX;
-                croppingAreaState.screenEndY = e.offsetY;
-                setCroppingAreaState({ ...croppingAreaState });
+            if (ffmpegOptions.croppingAreaState.isSelecting) {
+                ffmpegOptions.croppingAreaState.screenEndX = e.offsetX;
+                ffmpegOptions.croppingAreaState.screenEndY = e.offsetY;
+                setFfmpegOptions({ ...ffmpegOptions });
             }
         };
         overlay.onmouseup = (e: MouseEvent) => {
-            if (croppingAreaState.isSelecting) {
-                croppingAreaState.screenEndX = e.offsetX;
-                croppingAreaState.screenEndY = e.offsetY;
-                croppingAreaState.isSelecting = false;
-                console.log(croppingAreaState);
+            if (ffmpegOptions.croppingAreaState.isSelecting) {
+                ffmpegOptions.croppingAreaState.screenEndX = e.offsetX;
+                ffmpegOptions.croppingAreaState.screenEndY = e.offsetY;
+                ffmpegOptions.croppingAreaState.isSelecting = false;
+                console.log(ffmpegOptions.croppingAreaState);
 
                 const video = document.getElementById("input") as HTMLVideoElement;
-                croppingAreaState.realStartX = (croppingAreaState.screenStartX / overlay.width) * video.videoWidth;
-                croppingAreaState.realEndX = (croppingAreaState.screenEndX / overlay.width) * video.videoWidth;
-                croppingAreaState.realStartY = (croppingAreaState.screenStartY / overlay.height) * video.videoHeight;
-                croppingAreaState.realEndY = (croppingAreaState.screenEndY / overlay.height) * video.videoHeight;
+                ffmpegOptions.croppingAreaState.realStartX = (ffmpegOptions.croppingAreaState.screenStartX / overlay.width) * video.videoWidth;
+                ffmpegOptions.croppingAreaState.realEndX = (ffmpegOptions.croppingAreaState.screenEndX / overlay.width) * video.videoWidth;
+                ffmpegOptions.croppingAreaState.realStartY = (ffmpegOptions.croppingAreaState.screenStartY / overlay.height) * video.videoHeight;
+                ffmpegOptions.croppingAreaState.realEndY = (ffmpegOptions.croppingAreaState.screenEndY / overlay.height) * video.videoHeight;
 
-                setCroppingAreaState({ ...croppingAreaState });
+                setFfmpegOptions({ ...ffmpegOptions });
             }
         };
         overlay.onmouseout = (_e: MouseEvent) => {
-            croppingAreaState.isSelecting = false;
-            setCroppingAreaState({ ...croppingAreaState });
+            ffmpegOptions.croppingAreaState.isSelecting = false;
+            setFfmpegOptions({ ...ffmpegOptions });
         };
 
         // (a) update area
@@ -167,29 +202,39 @@ const App = () => {
             ctx.clearRect(0, 0, overlay.width, overlay.height);
             ctx.fillStyle = "#88888888";
             ctx.fillRect(0, 0, overlay.width, overlay.height);
-            if (croppingAreaState.screenEndX > 0) {
-                ctx.clearRect(croppingAreaState.screenStartX, croppingAreaState.screenStartY, croppingAreaState.screenEndX - croppingAreaState.screenStartX, croppingAreaState.screenEndY - croppingAreaState.screenStartY!);
+            if (ffmpegOptions.croppingAreaState.screenEndX > 0) {
+                ctx.clearRect(ffmpegOptions.croppingAreaState.screenStartX, ffmpegOptions.croppingAreaState.screenStartY, ffmpegOptions.croppingAreaState.screenEndX - ffmpegOptions.croppingAreaState.screenStartX, ffmpegOptions.croppingAreaState.screenEndY - ffmpegOptions.croppingAreaState.screenStartY!);
             }
         }
-    }, [croppingAreaState]);
+    }, [ffmpegOptions]);
 
     // (4) CLI
     ////
     useEffect(() => {
         const cli = document.getElementById("cli") as HTMLDivElement;
         let crop = "";
-        if (croppingAreaState.realEndX > 0) {
-            const width = (croppingAreaState.realEndX - croppingAreaState.realStartX).toFixed(0);
-            const height = (croppingAreaState.realEndY - croppingAreaState.realStartY).toFixed(0);
-            const offsetX = croppingAreaState.realStartX.toFixed(0);
-            const offsetY = croppingAreaState.realStartY.toFixed(0);
+        if (ffmpegOptions.croppingAreaState.realEndX > 0) {
+            const width = (ffmpegOptions.croppingAreaState.realEndX - ffmpegOptions.croppingAreaState.realStartX).toFixed(0);
+            const height = (ffmpegOptions.croppingAreaState.realEndY - ffmpegOptions.croppingAreaState.realStartY).toFixed(0);
+            const offsetX = ffmpegOptions.croppingAreaState.realStartX.toFixed(0);
+            const offsetY = ffmpegOptions.croppingAreaState.realStartY.toFixed(0);
             crop = `-vf crop=${width}:${height}:${offsetX}:${offsetY}`;
         }
 
-        let copyStreamText = copyStream ? "-c copy" : "";
+        const startTime = `-ss ${ffmpegOptions.startTime}`;
+        const endTime = `-t ${(ffmpegOptions.endTime - ffmpegOptions.startTime).toFixed(2)}`;
+        const copyStream = ffmpegOptions.copyStream ? "-c copy" : "";
+        const removeAudio = ffmpegOptions.removeAudio ? "-an" : "";
+        const blackScreen = ffmpegOptions.audioWithBlackScreen ? `-loop 1 -i ${BlackScreenFile}` : ``;
 
-        cli.innerHTML = `ffmpeg -ss ${startTime} -i a.mp4 ${crop} -t ${(endTime - startTime).toFixed(2)} ${copyStreamText} ${removeAudio ? "-an" : ""} out.mp4`;
-    }, [videoDuration, startTime, endTime, removeAudio, copyStream, croppingAreaState]);
+        let generatedCli = `${startTime} -i ${OriginalMediaFile} ${crop} ${endTime} ${copyStream} ${removeAudio} ${OutputMediaFile}`;
+        if (ffmpegOptions.audioWithBlackScreen) {
+            generatedCli = `${startTime} ${blackScreen} -i ${OriginalMediaFile} ${endTime} -c:v libx264 -tune stillimage -c:a libmp3lame -shortest ${OutputMediaFile}`;
+        }
+
+        cli.innerHTML = generatedCli;
+        setGeneratedCli(generatedCli);
+    }, [ffmpegOptions]);
 
     // (5) FFMPEG WASM
     //// (5-1)
@@ -224,26 +269,18 @@ const App = () => {
         // upload to wasm space
         const video = document.getElementById("input") as HTMLVideoElement;
         const src = video.src;
-        const orgName = "org.mp4";
+        const orgName = OriginalMediaFile;
         ffmpeg.FS("writeFile", orgName, await fetchFile(src));
 
-        // run and download from wasm space
-        const outName = "out.mp4";
-        // generate cli
-        let crop = "";
-        if (croppingAreaState.realEndX > 0) {
-            const width = (croppingAreaState.realEndX - croppingAreaState.realStartX).toFixed(0);
-            const height = (croppingAreaState.realEndY - croppingAreaState.realStartY).toFixed(0);
-            const offsetX = croppingAreaState.realStartX.toFixed(0);
-            const offsetY = croppingAreaState.realStartY.toFixed(0);
-            crop = `-vf crop=${width}:${height}:${offsetX}:${offsetY}`;
+        if (ffmpegOptions.audioWithBlackScreen) {
+            ffmpeg.FS("writeFile", BlackScreenFile, await fetchFile("./black.png"));
         }
 
-        let copyStreamText = copyStream ? "-c copy" : "";
+        // run and download from wasm space
+        const outName = OutputMediaFile;
+        // generate cli
 
-        const cli = `-ss ${startTime} -i ${orgName} ${crop} -t ${(endTime - startTime).toFixed(2)} ${copyStreamText} ${removeAudio ? "-an" : ""} ${outName}`;
-
-        const cliArgs = cli.split(" ");
+        const cliArgs = generatedCli.split(" ");
 
         await ffmpeg.run(...cliArgs);
         const data = ffmpeg.FS("readFile", outName);
@@ -278,13 +315,25 @@ const App = () => {
         }
     })();
 
-    const { inputSourceType, setInputSourceType, setInputSource } = useAppState();
     const videoInputSelectorProps: VideoInputSelectorProps = {
         id: "video-input-selector",
-        currentValue: inputSourceType || "File",
-        onInputSourceTypeChanged: setInputSourceType,
-        onInputSourceChanged: setInputSource,
-        onlyFile: true,
+        currentValue: videoInputSelectorValue,
+        videoInputTypes: ["Camera", "File", "Sample", "Window"],
+        onInputSourceChanged: (value: VideoInputSelectorValue) => {
+            console.log("CHANGE_CAMERA");
+            setVideoInputSelectorValue(value);
+        },
+        cameraResolutions: {
+            "640×360": [640, 360],
+            "720×480": [720, 480],
+            "1280×720": [1280, 720],
+        },
+        sampleFilePaths: {
+            sampleTest1: "sampleTest1",
+            sampleTest2: "sampleTest2",
+        },
+        classNameBase: "components-base",
+        fileFilter: "audio/*|image/*|video/*",
     };
 
     return (
@@ -322,15 +371,21 @@ const App = () => {
 
                         <div id="option-container" style={{ display: "flex", flexDirection: "row", width: "100%" }}>
                             <div style={{ display: "flex", flexDirection: "row" }}>
-                                <input type="checkbox" checked={removeAudio} className="checkbox checkbox-sm" onChange={setRemoveAudio} />
+                                <input type="checkbox" checked={ffmpegOptions.removeAudio} className="checkbox checkbox-sm" onChange={setRemoveAudio} />
                                 <div style={{ marginLeft: "5px" }}></div>
                                 <span>remove audio</span>
                             </div>
                             <div style={{ marginLeft: "15px" }}></div>
                             <div style={{ display: "flex", flexDirection: "row" }}>
-                                <input type="checkbox" checked={copyStream} className="checkbox checkbox-sm" onChange={setCopyStream} />
+                                <input type="checkbox" checked={ffmpegOptions.copyStream} className="checkbox checkbox-sm" onChange={setCopyStream} />
                                 <div style={{ marginLeft: "5px" }}></div>
                                 <span>copy stream</span>
+                            </div>
+                            <div style={{ marginLeft: "15px" }}></div>
+                            <div style={{ display: "flex", flexDirection: "row" }}>
+                                <input type="checkbox" checked={ffmpegOptions.audioWithBlackScreen} className="checkbox checkbox-sm" onChange={setBlackScreen} />
+                                <div style={{ marginLeft: "5px" }}></div>
+                                <span>audio with black screen</span>
                             </div>
                         </div>
 
