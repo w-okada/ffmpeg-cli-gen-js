@@ -52,7 +52,7 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
     const [isConverting, setIsConverting] = useState<boolean>(false)
     const [convertProgress, setConvertProgress] = useState(0);
 
-    const [fileName, setFileName] = useState<string>("")
+    const [fileName, _setFileName] = useState<string>("")
     const [fileUrl, setFileUrl] = useState<string>("")
     const [movieInfo, setMovieInfo] = useState<MovieInfo | null>(null)
 
@@ -138,9 +138,7 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
         // upload to wasm space
         const video = document.getElementById(TARGET_VIDEO_ID) as HTMLVideoElement;
         const src = video.src;
-        // ffmpeg.FS("writeFile", fileName, await fetchFile(src));
-        ffmpeg.FS("writeFile", '"' + fileName + '"', await fetchFile(src));
-
+        ffmpeg.FS("writeFile", fileName, await fetchFile(src));
 
         // if (ffmpegOptions.audioWithBlackScreen) {
         //     ffmpeg.FS("writeFile", BlackScreenFile, await fetchFile("./black.png"));
@@ -178,7 +176,7 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
 
         // input
         params.push("-i")
-        params.push('"' + fileName + '"')
+        params.push(fileName)
 
 
 
@@ -290,6 +288,10 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
         }, "")
         setFfmpegCli(cli)
     }, [ffmpegOptions.ffmpegOptions])
+
+    const setFileName = (_name: string) => {
+        _setFileName("input.mp4")
+    }
 
     const returnValue: FrontendManagerStateAndMethod = {
         stateControls: {
