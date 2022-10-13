@@ -138,7 +138,9 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
         // upload to wasm space
         const video = document.getElementById(TARGET_VIDEO_ID) as HTMLVideoElement;
         const src = video.src;
-        ffmpeg.FS("writeFile", fileName, await fetchFile(src));
+        // ffmpeg.FS("writeFile", fileName, await fetchFile(src));
+        ffmpeg.FS("writeFile", '"' + fileName + '"', await fetchFile(src));
+
 
         // if (ffmpegOptions.audioWithBlackScreen) {
         //     ffmpeg.FS("writeFile", BlackScreenFile, await fetchFile("./black.png"));
@@ -176,7 +178,7 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
 
         // input
         params.push("-i")
-        params.push(fileName)
+        params.push('"' + fileName + '"')
 
 
 
