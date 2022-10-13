@@ -11,6 +11,7 @@ It also generates a CLI for ffmpeg. You can copy and paste the CLI and run it wh
 No addtional application is required!
 
 This software records the screen with your browser. Safari is not supported. Chrome is supported in both Windows and MacOS.
+![ezgif-1-eedd9a0541](https://user-images.githubusercontent.com/48346627/195690902-d1e90826-ddf6-486c-bc3a-dcd29d4c365c.gif)
 
 
 # Demo
