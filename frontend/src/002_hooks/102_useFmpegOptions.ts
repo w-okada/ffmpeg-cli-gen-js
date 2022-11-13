@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { BlurOption } from "./102-1_filter_blur";
+import { CropOption } from "./102-2_filter_crop";
 
 export type FfmpegOptionRect = {
     startXRatio: number
@@ -6,19 +8,17 @@ export type FfmpegOptionRect = {
     endXRatio: number
     endYRatio: number
 }
+export type FilterOutput = {
+    outputNode: string
+    expression: string
+}
+
 
 export type CutOption = {
     startTime: number
     endTime: number
 }
-export type CropOption = {
-    rect: FfmpegOptionRect
-}
-export type BlurOption = {
-    rect: FfmpegOptionRect
-    innerBlur: boolean
-    strength: number
-}
+
 export type KeepLastFrame = {
     duration: number
 }

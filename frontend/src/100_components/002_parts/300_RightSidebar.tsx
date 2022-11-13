@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo } from "react";
+import { useAppState } from "../../003_provider/003_AppStateProvider";
 import { useStateControlCheckbox } from "../003_hooks/useStateControlCheckbox";
 import { AnimationTypes, HeaderButton, HeaderButtonProps } from "./101_HeaderButton";
 import { EditorController } from "./310_EditorController";
 
 export const RightSidebar = () => {
+    const { frontendManagerState } = useAppState()
     const sidebarAccordionEditorControllerCheckBox = useStateControlCheckbox("editor-controller");
 
     const accodionButtonForEditorController = useMemo(() => {
@@ -34,7 +36,11 @@ export const RightSidebar = () => {
                     </div>
                     <EditorController />
                 </div>
-
+                <div className="sidebar-content-row-button" onClick={() => {
+                    frontendManagerState.stateControls.generalDialogCheckbox.updateState(true)
+                }}>
+                    edit
+                </div>
             </div>
         </>
     );

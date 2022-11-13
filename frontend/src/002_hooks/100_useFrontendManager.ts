@@ -4,6 +4,9 @@ import { FFmpeg, createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 import { TARGET_VIDEO_ID } from "../const";
 import { AreaSelectState, useBodyVideoContainerLayout } from "./101_useBodyVideoContainerLayout";
 import { FfmpegOptionsState, useFfmpegOptions } from "./102_useFmpegOptions";
+import { ARIAL_TTF } from "./arial.ttf";
+import { generateBlurFilterExpression } from "./102-1_filter_blur";
+import { generateCropFilterExpression } from "./102-2_filter_crop";
 
 
 export const RECORDING_STATUS = {
@@ -23,6 +26,7 @@ export type MovieInfo = {
 
 export type StateControls = {
     openRightSidebarCheckbox: StateControlCheckbox
+    generalDialogCheckbox: StateControlCheckbox
 }
 
 type FrontendManagerState = {
@@ -64,6 +68,10 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
 
     // (1) Controller Switch
     const openRightSidebarCheckbox = useStateControlCheckbox("open-right-sidebar-checkbox");
+    // (2) Dialog
+    const generalDialogCheckbox = useStateControlCheckbox("general-dialog-checkbox");
+
+
 
     // (2) initialize
     useEffect(() => {
@@ -122,7 +130,7 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
         videoElem.volume = val
     }
 
-
+    const b64ToUint8Array = (str: string) => (Uint8Array.from(atob(str), c => c.charCodeAt(0)));
     const convert = async () => {
         if (!ffmpeg) {
             console.log("ffmpeg is null", ffmpeg);
@@ -139,6 +147,9 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
         const video = document.getElementById(TARGET_VIDEO_ID) as HTMLVideoElement;
         const src = video.src;
         ffmpeg.FS("writeFile", fileName, await fetchFile(src));
+
+
+        ffmpeg.FS("writeFile", 'arial.ttf', b64ToUint8Array(ARIAL_TTF));
 
         // if (ffmpegOptions.audioWithBlackScreen) {
         //     ffmpeg.FS("writeFile", BlackScreenFile, await fetchFile("./black.png"));
@@ -181,84 +192,35 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
 
 
         // filter complex
-        const cropOption = ffmpegOptions.ffmpegOptions.cropOption
         const blurOptions = ffmpegOptions.ffmpegOptions.blurOptions
-        const blurAreaCmds = blurOptions.map((x, index) => {
-            const startX = Math.floor(x.rect.startXRatio * movieInfo.width)
-            const startY = Math.floor(x.rect.startYRatio * movieInfo.height)
-            const endX = Math.floor(x.rect.endXRatio * movieInfo.width)
-            const endY = Math.floor(x.rect.endYRatio * movieInfo.height)
-            const width = endX - startX
-            const height = endY - startY
-            const cmd = `[0:v]boxblur=${x.strength}[fg],[fg]crop=${width}:${height}:${startX}:${startY}[br${index}]`
-            return cmd
-        })
-            .reduce((prev, cur) => {
-                if (prev.length == 0) {
-                    return cur
-                } else {
-                    return prev + "," + cur
-                }
-            }, "")
-        console.log("BLUR", ffmpegOptions)
-        const overlayCmds = blurOptions.map((x, index) => {
-            const startX = Math.floor(x.rect.startXRatio * movieInfo.width)
-            const startY = Math.floor(x.rect.startYRatio * movieInfo.height)
-            if (index == 0) {
-                return `[0:v][br${index}]overlay=${startX}:${startY}[mg${index}]`
-            } else {
-                return `[mg${index - 1}][br${index}]overlay=${startX}:${startY}[mg${index}]`
-            }
-        }).reduce((prev, cur) => {
-            if (prev.length == 0) {
-                return cur
-            } else {
-                return prev + "," + cur
-            }
-        }, "")
-        const blurCmd = blurAreaCmds.length > 0 ? blurAreaCmds + "," + overlayCmds : ""
+        const blurExpression = generateBlurFilterExpression(movieInfo, "0:v", blurOptions)
+        const cropOption = ffmpegOptions.ffmpegOptions.cropOption
+        const cropExpression = generateCropFilterExpression(movieInfo, blurExpression.outputNode, cropOption)
 
-        let cropCmd = ""
-        let outNode = ""
-        if (cropOption) {
-            const startX = Math.floor(cropOption.rect.startXRatio * movieInfo.width)
-            const startY = Math.floor(cropOption.rect.startYRatio * movieInfo.height)
-            const endX = Math.floor(cropOption.rect.endXRatio * movieInfo.width)
-            const endY = Math.floor(cropOption.rect.endYRatio * movieInfo.height)
-            const width = endX - startX
-            const height = endY - startY
-            const blurNum = blurOptions.length
-            if (blurNum == 0) {
-                cropCmd = `[0:v]crop=${width}:${height}:${startX}:${startY}[out]`
-            } else {
-                cropCmd = `[mg${blurNum - 1}]crop=${width}:${height}:${startX}:${startY}[out]`
-            }
-            outNode = "[out]"
-        } else {
-            const blurNum = blurOptions.length
-            outNode = `[mg${blurNum - 1}]`
-        }
+        /////////////////
+        // test
+        ////////////////
+        // const drawtext = "drawtext=enable='between(t\,1\,2)':fontfile=/arial.ttf:text=\'Artist日本語AA\':fontcolor=white:fontsize=24:x=10:y=10"
 
-        const complexFilter = [blurCmd, cropCmd].reduce((prev, cur) => {
+        let complexFilter = [blurExpression, cropExpression].reduce((prev, cur) => {
             if (prev.length == 0) {
-                return cur
-            } else if (cur.length == 0) {
+                return cur.expression
+            } else if (cur.expression.length == 0) {
                 return prev
             } else {
-                return prev + "," + cur
+                return prev + "," + cur.expression
             }
         }, "")
+
+
 
         if (complexFilter.length > 0) {
             params.push("-filter_complex")
             params.push(`${complexFilter}`)
-
-            params.push("-map")
-            params.push(`${outNode}`)
-        } else {
-            params.push("-map")
-            params.push(`0:v`)
         }
+        params.push("-map")
+        params.push(`[${cropExpression.outputNode}]`)
+
 
         if (ffmpegOptions.ffmpegOptions.removeAudio) {
 
@@ -297,6 +259,7 @@ export const useFrontendManager = (): FrontendManagerStateAndMethod => {
         stateControls: {
             // (1) Controller Switch
             openRightSidebarCheckbox,
+            generalDialogCheckbox,
         },
         fileUrl,
         fileName,

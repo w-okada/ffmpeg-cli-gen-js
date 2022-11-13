@@ -9,6 +9,8 @@ export type ApplicationSetting =
         }
     }
 
+export const InitialApplicationSetting = require("../../public/assets/setting.json")
+
 export const fetchApplicationSetting = async (): Promise<ApplicationSetting> => {
     const url = `./assets/setting.json`
     const res = await fetch(url, {

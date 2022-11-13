@@ -4,7 +4,7 @@
 @import "./020_Header.css";
 @import "./030_Body.css";
 @import "./040_RightSidebar.css";
-
+@import "./090_Dialog.css";
 @import "./101_RotatedButton.css";
 :root {
     --text-color: #333;
