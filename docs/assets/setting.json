@@ -1,8 +1,10 @@
 {
     "app_title": "ffmpeg-cli-generator",
     "colors": {
-        "selected_area": "#ff000088",
-        "crop_area": "#00ff0088",
-        "blur_area": "#0000ff88"
+        "selected_area": "#ff0000",
+        "crop_area": "#111111",
+        "text_area": "#00ff00",
+        "blur_area": "#0000ff",
+        "cut_time_area": "#00ffff"
     }
 }
